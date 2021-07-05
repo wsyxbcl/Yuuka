@@ -1,10 +1,11 @@
 import logging
+import toml
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineQuery, ParseMode, message, \
     InputTextMessageContent, InlineQueryResultPhoto
 
-from .lib.eflora import search_iplant
+from lib.eflora import search_iplant
 
 # Configure logging
 logging.basicConfig(filename="./yuuka_bot.log",
@@ -12,7 +13,7 @@ logging.basicConfig(filename="./yuuka_bot.log",
                     level=logging.INFO)
 
 # Initialize bot and dispatcher
-config = toml.load("yuuka.toml")
+config = toml.load("./yuuka.toml")
 bot = Bot(token=config["telegram"]["token"])
 dp = Dispatcher(bot)
 
@@ -30,7 +31,7 @@ async def search(message):
         raise
     results = search_iplant(keyword)
     if len(results) == 1:
-        await message_reply(results[0]['url'])
+        await message.reply(results[0]['url'])
     else:
         keyboard_markup = types.InlineKeyboardMarkup()
         for plant in results:
@@ -39,4 +40,14 @@ async def search(message):
         keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
         await message.reply("Multiple results", reply_markup=keyboard_markup)
 
-    
+@dp.callback_query_handler(lambda cb: '/search' in cb.data)
+@dp.callback_query_handler(text='exit')
+async def inline_now_answer_callback_handler(query):
+    logging.info(f'{query.inline_message_id}: {query.data}')
+    if query.data == 'exit':
+        await query.message.delete()
+        return 1
+    await now(message.Message(text=query.data), query=query)
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
