@@ -19,6 +19,10 @@ def search_iplant(keyword): # temporaryly deprecated
 def search_cvh(keyword):
     search_url = cvh_search_url.format(keyword=keyword)
     results = requests.get(search_url, headers={'referer': 'https://www.cvh.ac.cn/species/taxon_tree.php'}).json()
+    # example
+    # [{'value': 'Saxifraga stolonifera',
+    #  'format': '<em>Saxifraga stolonifera</em>',
+    #  'desc': '虎耳草'}]
     for i in results:
         i['url'] = cvh_base_url.format(value=i['value']))
     #TODO return species objects
