@@ -1,3 +1,4 @@
+# from io import BytesIO
 import logging
 import toml
 
@@ -6,6 +7,8 @@ from aiogram.types import InlineQuery, ParseMode, message, \
     InputTextMessageContent, InlineQueryResultPhoto
 
 from lib.eflora import search_cvh, species_info_cvh, cvh_base_url, iplant_base_url
+from lib.plantcv import photo_to_species
+
 
 # Configure logging
 logging.basicConfig(filename="./yuuka_bot.log",
@@ -23,6 +26,24 @@ dp = Dispatcher(bot)
 @dp.message_handler(commands=['start'])
 async def send_welcome(message):
     await message.reply("/help if you need, contribute or build your own from https://github.com/wsyxbcl/Yuuka") 
+
+@dp.message_handler(content_types="photo")
+async def get_photo(message):
+    # TODO bytesio for image
+    # buf = BytesIO()
+    # await message.photo[-1].download(buf)
+    # buf.seek(0)
+    await message.photo[-1].download(destination_file="./photo.jpg", make_dirs=False)
+    msg = ""
+    if (results := photo_to_species('./photo.jpg')) is None:
+        msg = "Failed to recognize"
+    else:
+        for species in results:
+            msg += "[{}]({}) _{}_ ({:.3f})\n".format(species['taxon_chinese'].replace('_', ' '), 
+                                                     iplant_base_url.format(value=species['value']),
+                                                     species['value'], 
+                                                     species['probability'])
+    await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
 
 
 @dp.message_handler(commands=['search'])
@@ -55,7 +76,7 @@ async def info(message, query=None):
     species_text = '\n'.join([species_taxon, 
                               species_info['chName']+' '+species_info['sciName'], 
                               species_links])
-    await query.message.reply(species_text, parse_mode=ParseMode.HTML)
+    await query.message.answer(species_text, parse_mode=ParseMode.HTML)
 
 @dp.callback_query_handler(lambda cb: '/info' in cb.data)
 @dp.callback_query_handler(text='exit')
