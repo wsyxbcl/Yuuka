@@ -14,7 +14,10 @@ logging.basicConfig(filename="./yuuka_bot.log",
 
 # Initialize bot and dispatcher
 config = toml.load("./yuuka.toml")
-bot = Bot(token=config["telegram"]["token"])
+try:
+    bot = Bot(token=config["telegram"]["token"], proxy=config["telegram"]["proxy"])
+except KeyError:
+    bot = Bot(token=config["telegram"]["token"])
 dp = Dispatcher(bot)
 
 @dp.message_handler(commands=['start'])
