@@ -29,7 +29,7 @@ async def send_welcome(message):
 async def search(message):
     logging.info(f'{message.text}')
     try:
-        keyword = message.text.split()[1]
+        keyword = message.text.split(' ', 1)[1]
     except IndexError:
         raise
     results = search_cvh(keyword)
@@ -37,11 +37,10 @@ async def search(message):
     keyboard_markup = types.InlineKeyboardMarkup()
     for plant in results:
         plant_name = plant['desc'] + " {}".format(plant['value'])
-        keyboard_markup.row(types.InlineKeyboardButton(plant_name, 
-            callback_data=' '.join(filter(None, ['/info', plant['value']]))))
+        keyboard_markup.row(types.InlineKeyboardButton(plant_name, callback_data=' '.join(filter(None, ['/info', plant['value']]))))
     # add exit button
     keyboard_markup.row(types.InlineKeyboardButton('exit', callback_data='exit'))
-    await message.reply("CVH 植物物种名录", reply_markup=keyboard_markup)
+    await message.reply("Find {} in CVH 植物物种名录".format(keyword), reply_markup=keyboard_markup)
 
 @dp.message_handler(commands=['info'])
 async def info(message, query=None):
@@ -51,21 +50,21 @@ async def info(message, query=None):
     species_taxon = ' -> '.join([species_info['taxon']['family_c']+"<em>{}</em>".format(species_info['taxon']['family']), 
                                  species_info['taxon']['genus_c']])
     species_links = ' '.join(["more info:", 
-                              '<a href="{}">CVH</a>'.format(cvh_base_url.format(value=species_info['canName'])), 
-                              '<a href="{}">iplant</a>'.format(iplant_base_url.format(value=species_info['canName']))])
+                              '<a href="{}">iplant</a>'.format(iplant_base_url.format(value=species_info['canName'])), 
+                              '<a href="{}">CVH</a>'.format(cvh_base_url.format(value=species_info['canName']))])
     species_text = '\n'.join([species_taxon, 
                               species_info['chName']+' '+species_info['sciName'], 
                               species_links])
-    await message.reply(species_text, parse_mode=ParseMode.HTML)
+    await query.message.reply(species_text, parse_mode=ParseMode.HTML)
 
-@dp.callback_query_handler(lambda cb: '/search' in cb.data)
+@dp.callback_query_handler(lambda cb: '/info' in cb.data)
 @dp.callback_query_handler(text='exit')
 async def inline_search_answer_callback_handler(query):
     logging.info(f'{query.inline_message_id}: {query.data}')
     if query.data == 'exit':
         await query.message.delete()
         return 1
-    print(query)
+    # await search(message.Message(text=query.data), query=query)
     await info(message.Message(text=query.data), query=query)
 
 if __name__ == '__main__':
