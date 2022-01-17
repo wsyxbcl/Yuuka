@@ -25,7 +25,7 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands=['start'])
 async def send_welcome(message):
-    await message.reply("/help if you need, contribute or build your own from https://github.com/wsyxbcl/Yuuka") 
+    await message.reply("Plant recognition is in testing, send tg compressed image to get result.") 
 
 @dp.message_handler(content_types="photo")
 async def get_photo(message):
