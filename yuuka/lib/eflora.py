@@ -17,13 +17,36 @@ def search_iplant(keyword): # temporaryly deprecated
     return results
 
 def search_cvh(keyword):
+    """
+    search keyword from cvh database
+    Example for returned value:
+        [{'value': 'Saxifraga stolonifera',
+        'format': '<em>Saxifraga stolonifera</em>',
+        'desc': '虎耳草'}]
+    """
     search_url = cvh_search_url.format(keyword=keyword)
     results = requests.get(search_url, headers={'referer': 'https://www.cvh.ac.cn/species/taxon_tree.php'}).json()
-    # example
-    # [{'value': 'Saxifraga stolonifera',
-    #  'format': '<em>Saxifraga stolonifera</em>',
-    #  'desc': '虎耳草'}]
     for i in results:
-        i['url'] = cvh_base_url.format(value=i['value']))
+        i['url'] = cvh_base_url.format(value=i['value'])
     #TODO return species objects
     return results
+
+def species_info_cvh(species):
+    """
+    Example for returned value:
+        {'id': 'T20171000024074',
+        'canName': 'Saxifraga stolonifera',
+        'sciName': '<em>Saxifraga stolonifera</em>  <em></em> Curtis',
+        'chName': '虎耳草',
+        'taxon': {'genus': 'Saxifraga',
+        'genus_c': '虎耳草属',
+        'family': 'Saxifragaceae',
+        'family_c': '虎耳草科',
+        'phylum': 'Angiospermae',
+        'phylum_c': '被子植物门'}}
+    """
+    url = cvh_species_url.format(species=species)
+    results = requests.get(url, headers={'referer': 'https://www.cvh.ac.cn/species/taxon_tree.php'}).json()
+    required_info = ['id', 'canName', 'sciName', 'chName', 'taxon']
+    species_info = {k: v for k, v in results['info'].items() if k in required_info}
+    return species_info
