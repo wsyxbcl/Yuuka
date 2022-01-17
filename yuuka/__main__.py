@@ -28,7 +28,10 @@ async def send_welcome(message):
     await message.reply("Plant recognition is in testing, send tg compressed image to get result.") 
 
 @dp.message_handler(content_types="photo")
-async def get_photo(message):
+async def plant_recognition(message):
+    """
+    powered by quarrying-plant-id(https://github.com/quarrying/quarrying-plant-id)
+    """
     # TODO bytesio for image
     # buf = BytesIO()
     # await message.photo[-1].download(buf)
