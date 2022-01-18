@@ -76,9 +76,14 @@ async def info(message, query=None):
     species_links = ' '.join(["more info:", 
                               '<a href="{}">iplant</a>'.format(iplant_base_url.format(value=species_info['canName'])), 
                               '<a href="{}">CVH</a>'.format(cvh_base_url.format(value=species_info['canName']))])
-    species_text = '\n'.join([species_taxon, 
-                              species_info['chName']+' '+species_info['sciName'], 
-                              species_links])
+    try:
+        species_text = '\n'.join([species_taxon, 
+                                species_info['chName']+' '+species_info['sciName'], 
+                                species_links])
+    except KeyError:
+        species_text = '\n'.join([species_taxon, 
+                                species_info['sciName'], 
+                                species_links])
     await query.message.answer(species_text, parse_mode=ParseMode.HTML)
 
 @dp.callback_query_handler(lambda cb: '/info' in cb.data)

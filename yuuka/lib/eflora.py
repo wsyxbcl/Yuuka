@@ -48,5 +48,8 @@ def species_info_cvh(species):
     url = cvh_species_url.format(species=species)
     results = requests.get(url, headers={'referer': 'https://www.cvh.ac.cn/species/taxon_tree.php'}).json()
     required_info = ['id', 'canName', 'sciName', 'chName', 'taxon']
-    species_info = {k: v for k, v in results['info'].items() if k in required_info}
+    try:
+        species_info = {k: v for k, v in results['info'].items() if k in required_info}
+    except KeyError:
+        return None
     return species_info
