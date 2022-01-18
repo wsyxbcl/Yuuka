@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineQuery, ParseMode, message, \
     InputTextMessageContent, InlineQueryResultPhoto
 
-from lib.eflora import search_cvh, species_info_cvh, cvh_base_url, iplant_base_url
+from lib.eflora import search_cvh, species_info_cvh, cvh_base_url, iplant_base_url, iplant_value_from_latin
 from lib.plantcv import photo_to_species
 
 
@@ -43,7 +43,7 @@ async def plant_recognition(message):
     else:
         for species in results:
             msg += "[{}]({}) _{}_ ({:.3f})\n".format(species['taxon_chinese'].replace('_', ' '), 
-                                                     iplant_base_url.format(value=species['value']),
+                                                     iplant_base_url.format(value=iplant_value_from_latin(species['value'])),
                                                      species['value'], 
                                                      species['probability'])
     await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
@@ -74,7 +74,7 @@ async def info(message, query=None):
     species_taxon = ' -> '.join([species_info['taxon']['family_c']+"<em>{}</em>".format(species_info['taxon']['family']), 
                                  species_info['taxon']['genus_c']])
     species_links = ' '.join(["more info:", 
-                              '<a href="{}">iplant</a>'.format(iplant_base_url.format(value=species_info['canName'])), 
+                              '<a href="{}">iplant</a>'.format(iplant_base_url.format(value=iplant_value_from_latin(species_info['canName']))), 
                               '<a href="{}">CVH</a>'.format(cvh_base_url.format(value=species_info['canName']))])
     try:
         species_text = '\n'.join([species_taxon, 

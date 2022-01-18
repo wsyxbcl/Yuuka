@@ -16,6 +16,14 @@ def search_iplant(keyword): # temporaryly deprecated
     #TODO return species objects
     return results
 
+def iplant_value_from_latin(latin_name):
+    # convert latin name to iplant searching name
+    if "'" in latin_name:
+        # Cultivated species
+        return '.cv'.join(latin_name.split("'")[:2])
+    else:
+        return latin_name
+
 def search_cvh(keyword):
     """
     search keyword from cvh database
