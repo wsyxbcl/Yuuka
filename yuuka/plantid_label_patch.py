@@ -115,7 +115,7 @@ def label_analyzer(label, debug=False):
 if __name__ == '__main__':
     plant_list = np.loadtxt("./lib/quarrying_plant_id/plantid/models/quarrying_plantid_label_map.txt", 
                             dtype=str, delimiter=',')
-    output_file = "./species.csv"
+    output_file = "./data/species.csv"
 
     for (i, label) in enumerate(plant_list):
         # # CompoundLabelIssue
