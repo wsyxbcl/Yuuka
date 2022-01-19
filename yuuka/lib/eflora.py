@@ -20,7 +20,7 @@ def iplant_value_from_latin(latin_name):
     # convert latin name to iplant searching name
     if "'" in latin_name:
         # Cultivated species
-        return '.cv'.join(latin_name.split("'")[:2])
+        return latin_name.replace("'", "cv. '", 1)
     else:
         return latin_name
 
