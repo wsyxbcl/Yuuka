@@ -177,7 +177,6 @@ if __name__ == '__main__':
                     print(f"LatinNameIssue: {species}")
                     print(species.__repr__)
                     #TODO
-
                 # CNnameIssue
                 if species.cvh_name_cn and species.iplant_name_cn:
                     if species.cvh_name_cn == species.label_name_cn:
@@ -208,11 +207,11 @@ if __name__ == '__main__':
                     # no reference Chinese name in database
                     #TODO replace '<某种>'
                     continue
-
             else:
                 # no reference
                 print(f"No reference: {species.label_id} {species.label}")
                 continue
+
         for species in species_list:
             species.add_to_label_map(output_label_map)
 
