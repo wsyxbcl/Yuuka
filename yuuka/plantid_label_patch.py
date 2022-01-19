@@ -1,4 +1,5 @@
 # species nameing patch for quarrying_plantid_label_map
+import csv
 from bs4 import BeautifulSoup
 import numpy as np
 
@@ -26,25 +27,45 @@ class Species:
     def get_cvh_url(self):
         return cvh_base_url.format(value=cvh_name_latin)
 
-    def suggest_label(self, name_cn_suggest=None):
+    def suggest_label(self, cn_name_suggest=None):
         #TODO specify format for unnamed species in Chinese
         # Unfinished, only for species name correction
 
-        if not name_cn_suggest:
-            name_cn_suggest = iplant_name_cn
-        label_name_cn_suggest = '_'.join(self.label_name_cn.split('_')[:2].append(name_cn_suggest))
+        if not cn_name_suggest:
+            cn_name_suggest = self.iplant_name_cn
+
+        label_suggest = '_'.join(self.label.split('_')[:2])+'_'+cn_name_suggest
         label_name_latin_suggest = self.iplant_name_latin
-        return [label_id, label_name_cn_suggest, label_name_latin_suggest]
+        return (label_suggest, label_name_latin_suggest)
 
     def add_to_csv(self, filename):
-        with open(filename, 'a') as fp:
-            fp.write(','.join([self.label_id, self.label_name_cn, str(self.label_name_latin), 
+        # for offline analysis
+        with open(filename, 'a') as f:
+            f.write(','.join([self.label_id, self.label, self.label_name_cn, str(self.label_name_latin), 
                               str(self.iplant_name_cn), str(self.iplant_name_latin), 
                               str(self.cvh_name_cn), str(self.cvh_name_latin)]))
-            fp.write('\n')
+            f.write('\n')
 
+    def add_to_label_map(self, filename):
+        # for CV model
+        with open(filename, 'a') as f:
+            f.write(','.join([self.label_id, self.label, str(self.label_name_latin)])) 
+            f.write('\n')
+
+    @classmethod
+    def from_csv(cls, data, header=['label_id', 'label', 'label_name_cn', 'label_name_latin', 
+                                    'iplant_name_cn', 'iplant_name_latin', 'cvh_name_cn', 'cvh_name_latin']):
+        species = cls.__new__(cls)
+        for (i, value) in enumerate(data):
+            if value == 'None':
+                value = None
+            setattr(species, header[i], value)
+        return species
+
+    def __repr__(self):
+        return "{0.label_id} {0.label} {0.label_name_latin}\niplant: {0.iplant_name_cn} {0.iplant_name_latin}\ncvh: {0.cvh_name_cn} {0.cvh_name_latin}\n".format(self)
     def __str__(self):
-        return "label: {0.label!s}\niplant: {0.iplant_name_cn} {0.iplant_name_latin}\ncvh: {0.cvh_name_cn} {0.cvh_name_latin}\n".format(self)
+        return "{0.label_id} {0.label} {0.label_name_latin}".format(self)
 
 
 def label_analyzer(label, debug=False):
@@ -91,7 +112,7 @@ def label_analyzer(label, debug=False):
             else:
                 cvh_name_latin = cvh_name_cn = None
 
-    result = Species(label=label, label_id=label_id, label_name_cn=label_name_cn, label_name_latin=label_name_latin,
+    result = Species(label=label[1], label_id=label_id, label_name_cn=label_name_cn, label_name_latin=label_name_latin,
                      iplant_name_cn=iplant_name_cn, iplant_name_latin=iplant_name_latin,
                      cvh_name_cn=cvh_name_cn, cvh_name_latin=cvh_name_latin)
     if debug:
@@ -113,87 +134,89 @@ def label_analyzer(label, debug=False):
     # genus and compound species (&) in label
 
 if __name__ == '__main__':
-    plant_list = np.loadtxt("./lib/quarrying_plant_id/plantid/models/quarrying_plantid_label_map.txt", 
+    offline = True # using local csv data
+
+    label_list = np.loadtxt("./lib/quarrying_plant_id/plantid/models/quarrying_plantid_label_map.txt", 
                             dtype=str, delimiter=',')
-    output_file = "./data/species.csv"
+    output_csv = "./data/species.csv"
+    output_label_map = "./data/quarrying_plantid_label_map.txt"
 
-    for (i, label) in enumerate(plant_list):
-        # # CompoundLabelIssue
-        # if '&' in label[1]: 
-        #     #TODO
-        #     print(f"CompoundLabelIssue: {str(label)}")
-        #     continue
+    if offline:
+        species_list = []
+        with open(output_csv, 'r') as f:
+            data_csv = csv.reader(f)
+            for data in data_csv:
+                species_list.append(Species.from_csv(data))
+        for species in species_list:
+            # CompoundLabelIssue
+            if '&' in species.label_name_cn:
+                #TODO
+                print(f"CompoundLabelIssue: {species}")
+                continue
 
-        species = label_analyzer(label, debug=True)
-        species.add_to_csv(output_file)
-        # TaxonIssue
-        # if species.label_name_latin:
-        #     level_cn = len(label[1].split('_'))
-        #     level_latin = len(species.label_name_latin.split(' '))
-        #     if (level_cn == 2 and level_latin >= 2) or (level_cn == 3 and level_latin == 1):
-        #         # mismatched taxon level
-        #         print(f"TaxonIssue: {label}")
-        #         label_suggestion = species.suggest_label()
-        #         print(f"Label suggestion: {label_suggestion}")
-        #         user_command = input("(A)ccept/(P)ass)? ").lower()
-        #         if user_command == 'a':
-        #             plant_list[i] = label_suggestion
-        #         else:
-        #             continue
-        # else:
-        #     # missing latin name or non-plant species
-        #     print(f"TaxonIssue: {label}")
-        #     user_command = input("(S)uggest/(N)on-plant/(P)ass)? ").lower()
-        #     if user_command == 's':
-        #         label_suggestion = species.suggest_label()
-        #         print(f"Label suggestion: {label_suggestion}")
-        #         if input("(A)ccept/(P)ass").lower == 'a':
-        #             plant_list[i] = label_suggestion
-        #         else:
-        #             continue
-        #     else:
-        #         continue
+            # TaxonIssue
+            if species.label_name_latin == '':
+                # missing latin name or non-plant species
+                print(f"TaxonIssue: {species}")
+                user_command = input("(S)uggest/(N)on-plant/(P)ass)? ").lower()
+                if user_command == 's':
+                    label_suggestion, label_latin_suggestion = species.suggest_label()
+                    print(f"Label suggestion: {label_suggestion} {label_latin_suggestion}")
+                    if input("(A)ccept/(P)ass").lower == 'a':
+                        species.label = label_suggestion
+                        species.label_name_latin = label_latin_suggestion
+                    else:
+                        continue
+                else:
+                    continue
 
+            # NameingIssue
+            if species.iplant_name_latin:
+                # LatinNameIssue
+                if species.label_name_latin != species.iplant_name_latin:
+                    print(f"LatinNameIssue: {species}")
+                    print(species.__repr__)
+                    #TODO
 
-        # # NameingIssue
-        # if species.iplant_name_latin:
-        #     # LatinNameIssue
-        #     if species.label_name_latin != species.iplant_name_latin:
-        #         print(f"LatinNameIssue: {str(label)}")
-        #         print(species)
-        #         #TODO
+                # CNnameIssue
+                if species.cvh_name_cn and species.iplant_name_cn:
+                    if species.cvh_name_cn == species.label_name_cn:
+                        print(f"{species} Passed")
+                        continue
+                    else:
+                        # Prefer cvh name over iplant
+                        print(f"CNnameIssue: {species}")
+                        print(species.__repr__)
+                        print("Suggest CVH name instead")
+                        label_suggestion, label_latin_suggestion = species.suggest_label(cn_name_suggest=species.cvh_name_cn)
+                        print(f"Label updated: {label_suggestion} {label_latin_suggestion}")
+                        species.label_name_cn = species.cvh_name_cn
+                        species.label = label_suggestion
+                elif species.iplant_name_cn:
+                    if species.iplant_name_cn == species.label_name_cn:
+                        print(f"{species} Passed")
+                        continue
+                    else:
+                        # iplant name as reference
+                        print(f"CNnameIssue: {species}")
+                        print(species.__repr__)
+                        label_suggestion, label_latin_suggestion = species.suggest_label()
+                        print(f"Label suggestion: {label_suggestion} {label_latin_suggestion}")
+                        species.label_name_cn = species.iplant_name_cn
+                        species.label = label_suggestion
+                else:
+                    # no reference Chinese name in database
+                    #TODO replace '<某种>'
+                    continue
 
-        #     # CNnameIssue
-        #     if species.cvh_name_cn and species.iplant_name_cn:
-        #         if species.cvh_name_cn in (species.cvh_name_cn, species.iplant_name_cn, species.label_name_cn):
-        #             print(f"{str(label)} Passed")
-        #             continue
-        #         else:
-        #             # Prefer cvh name over iplant
-        #             print(f"CNnameIssue: {str(label)}")
-        #             print("Suggest CVH name instead")
-        #             label_suggestion = sepcies.suggest_label(cn_name_suggest=species.cvh_name_cn)
-        #             print(f"Label suggestion: {label_suggestion}")
-        #             if input("(A)ccept/(P)ass").lower == 'a':
-        #                 plant_list[i] = label_suggestion
-        #             else:
-        #                 continue
-        #     elif species.iplant_name_cn:
-        #         # iplant name as reference
-        #         if species.iplant_name_cn == species.label_name_cn:
-        #             print(f"{str(label)} Passed")
-        #             continue
-        #     else:
-        #         # no reference Chinese name in database
-        #         #TODO replace '<某种>'
-        #         continue
-        #     # unmatched Chinese name
-        #     print(f"CNnameIssue: {str(label)}")
-        #     print(species)
-        #     # TODO  
+            else:
+                # no reference
+                print(f"No reference: {species.label_id} {species.label}")
+                continue
+        for species in species_list:
+            species.add_to_label_map(output_label_map)
 
-        # else:
-        #     # no reference
-        #     print(f"No reference: {str(label)}")
-        #     continue
-    
+    else:
+        for (i, label) in enumerate(label_list):
+            species = label_analyzer(label, debug=True)
+            species.add_to_csv(output_csv)
