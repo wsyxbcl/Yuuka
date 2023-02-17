@@ -3,3 +3,4 @@
 *.log
 ./yuuka/lib/quarrying_plant/**
 photo.jpg
+crawler/*
