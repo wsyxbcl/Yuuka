@@ -8,7 +8,9 @@ iplant_search_url = "http://www.iplant.cn/ashx/searchautocomplete.ashx?query={ke
 cvh_base_url = "https://www.cvh.ac.cn/species/taxon_tree.php?type=sp&param={value}"
 cvh_species_url = "https://www.cvh.ac.cn/controller/species/species_info.php?spname={species}"
 cvh_search_url = "https://www.cvh.ac.cn/controller/ajax/autocomplete.php?term={keyword}"
-cvh_tree_url = "https://www.cvh.ac.cn/controller/species/tree_lazyload.php?type={level}&param={name}"
+
+cvh_tree_url = "https://www.cvh.ac.cn/controller/species/tree.php"
+cvh_tree_loading_url = "https://www.cvh.ac.cn/controller/species/tree_lazyload.php?type={level}&param={name}"
 cvh_taxa_level = ['kin', 'phy', 'fam', 'gen']
 
 def search_iplant(keyword): # temporaryly deprecated
@@ -72,23 +74,9 @@ def taxon_branch_cvh(taxon_level, taxon_name):
     if taxon_level == 'kin':
         url = cvh_tree_url.split('?')[0]
     else:
-        url = cvh_tree_url.format(level=taxon_level, name=taxon_name)
+        url = cvh_tree_loading_url.format(level=taxon_level, name=taxon_name)
     results = requests.get(url, headers={'referer': 'https://www.cvh.ac.cn/species/taxon_tree.php'}).json()
-    cvh_names = [taxa['text'].split()[1] for taxa in results]
+    cvh_names = [taxa['text'].split(' ')[-1] for taxa in results]
     sci_names = [taxa['param'] for taxa in results]
     branch = [[x, y] for x,y in zip(sci_names, cvh_names)]
     return branch
-
-def iterate_cvh():
-    # Phylum
-    taxa_phy = taxon_branch_cvh(taxon_level='kin', 'Plantae')
-    # Family
-    for family in taxa_phy:
-        taxa_fam = taxon_branch_cvh(taxon_level='phy', family)
-            # Genus
-            for genus in taxa_fam:
-                taxa_genus = taxon_branch_cvh(taxon_level='fam', genus)
-                    # Species
-                    for species in taxa_genus:
-                        taxa_species = taxon_branch_cvh(taxon_level='gen', species):
-        
